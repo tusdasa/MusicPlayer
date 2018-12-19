@@ -20,28 +20,42 @@ MusicPlayer::MusicPlayer(QWidget *parent)
     createToolBar();
     createStatusBar();
 
+    //
+    mo = new QStringListModel();
+
     //打开文件
     connect(cui->openOneFile,SIGNAL(triggered(bool)),this,SLOT(openOneFileFunction()));
     //打开文件夹
     connect(cui->openOneFolder,SIGNAL(triggered(bool)),this,SLOT(openOneFolderFunction()));
     //播放
     connect(cui->play,SIGNAL(clicked(bool)),this,SLOT(playMusic()));
-    //
+    //暂停
     connect(cui->pause,SIGNAL(clicked(bool)),this,SLOT(puseMusic()));
-    //
+    //停止
     connect(cui->stop,SIGNAL(clicked(bool)),this,SLOT(stopMusic()));
-    //
+    //下一首
     connect(cui->next,SIGNAL(clicked(bool)),this,SLOT(nextMusic()));
-    //
+    //上一首
     connect(cui->before,SIGNAL(clicked(bool)),this,SLOT(beforeMusic()));
-    //
+    //改变音量大小
     connect(cui->volume,SIGNAL(valueChanged(int)),this,SLOT(changeVolume()));
-    //
+    //设置进度条
     connect(player,SIGNAL(audioAvailableChanged(bool)),this,SLOT(setLoadMaxValue()));
-    //
+    //进度条移动通知
     connect(player,SIGNAL(positionChanged(qint64)),this,SLOT(changeLoad()));
-    //
+    //快进
     connect(cui->load,SIGNAL(sliderReleased()),this,SLOT(setMusicPosition()));
+    //删除文件
+    //connect(cui->delOneFile,SIGNAL(triggered(bool)),this,SLOT());
+    //清理播放列表
+    connect(cui->clearPlayList,SIGNAL(triggered(bool)),this,SLOT(clearMusicList()));
+    //错误处理
+    connect(player,SIGNAL(error(QMediaPlayer::Error)),this,SLOT(handleMusicPlayError()));
+    //动画
+    connect(player,SIGNAL(positionChanged(qint64)),tui,SLOT(chengeImageView()));
+    //
+    connect(player,SIGNAL(positionChanged(qint64)),this,SLOT(playNextOneMusic(qint64)));
+    //
 }
 
 MusicPlayer::~MusicPlayer()
@@ -54,9 +68,15 @@ void MusicPlayer::createMenuBar(){
      edit = this->menuBar()->addMenu(tr("&Edit"));
      view = this->menuBar()->addMenu(tr("&View"));
      help =  this->menuBar()->addMenu(tr("&Help"));
-
+     //打开文件
      file->addAction(cui->openOneFile);
+     //打开一个文件夹
      file->addAction(cui->openOneFolder);
+
+     //删除一个文件
+     edit->addAction(cui->delOneFile);
+     //清理播放列表
+     edit->addAction(cui->clearPlayList);
 }
 
 void MusicPlayer::createToolBar(){
@@ -84,27 +104,142 @@ void MusicPlayer::createStatusBar(){
 
 void MusicPlayer::openOneFileFunction(){
     QString fileName = QFileDialog::getOpenFileName(this,QString("open a file"),"/","*.mp3");
-    player->setMedia(QUrl::fromLocalFile(fileName));
-    player->setVolume(80);
-}
-void MusicPlayer::openOneFolderFunction(){
+
+    if(fileName!=NULL){
+        MusicFile mf;
+        QFileInfo file(fileName);
+        mf.setFilename(file.fileName());
+        mf.setFilenumber(1);
+        mf.setFilepath(file.absoluteFilePath());
+        playlist << mf;
+        player->setMedia(QUrl::fromLocalFile(mf.getFilepath()));
+        sl.clear();
+        for(int i=0;i<playlist.length();i++){
+            MusicFile mf1 = playlist.at(i);
+            sl << mf1.getFilename();
+            qDebug() << "mf1 << " <<mf1.getFilename();
+        }
+        mo->setStringList(sl);
+        tui->list->setModel(mo);
+        tui->songname->setText(mf.getFilename());
+        qDebug() << player->metaData("Title");
+
+        player->play();
+        qDebug() << player->currentMedia().canonicalResource().mimeType();
+        player->setVolume(80);
+    }
+
+    qDebug() << fileName;
+
 
 }
+void MusicPlayer::openOneFolderFunction(){
+    //拓展名控制
+    QStringList ext ;
+    ext << "mp3";
+    QString folderName = QFileDialog::getExistingDirectory(this,"open a dir","/");
+    if(folderName!=NULL){
+        QDir dir(folderName);
+        qDebug() << dir.absolutePath();
+        int j=1;
+        foreach (QFileInfo info, dir.entryInfoList()) {
+            if(info.isFile()){
+                for(int i=0;i<ext.length();i++){
+                    //拓展名控制
+                    if(info.suffix()==ext[i]){
+                            MusicFile mf;
+                            mf.setFilenumber(j);
+                            qDebug() << j;
+                            mf.setFilepath(info.absoluteFilePath());
+                            qDebug() << info.absoluteFilePath();
+                            mf.setFilename(info.fileName());
+                            qDebug() << info.fileName();
+                            playlist << mf;
+                            j++;
+                    }
+                }
+            }
+        }
+
+
+        for(int i=0;i<playlist.length();i++){
+            MusicFile mf1 = playlist.at(i);
+            sl << mf1.getFilename();
+            qDebug() << "mf1 << " <<mf1.getFilename();
+        }
+        mo->setStringList(sl);
+        tui->list->setModel(mo);
+        MusicFile mf1 = playlist.at(0);
+        if(mf1.getMediaContent()!=NULL){
+            player->setMedia(mf1.getMediaContent());
+            tui->songname->setText(mf1.getFilename());
+            player->play();
+        }
+
+
+    }
+}
 void MusicPlayer::puseMusic(){
-    player->pause();
+    if(player->state()==QMediaPlayer::PausedState){
+        player->play();
+    }else{
+        player->pause();
+    }
+
+    qDebug() << "state:" <<player->state();
+
+
 }
 void MusicPlayer::playMusic(){
-    player->play();
+    if(player->state()==QMediaPlayer::PlayingState){
+        player->pause();
+    }else {
+        player->play();
+    }
+
 }
 void MusicPlayer::stopMusic(){
     player->stop();
     cui->load->setValue(0);
+    tui->resetImageView();
+    update();
+    update();
 }
 void MusicPlayer::nextMusic(){
-    cui->load->setValue(0);
+
+    if(playlist.length()==0){
+        tui->songname->setText("没有歌曲");
+    }
+    if(playlist.length()>count+1){
+        count+=1;
+        MusicFile mf = playlist.at(count);
+        player->stop();
+        player->setMedia(mf.getMediaContent());
+        tui->songname->setText(mf.getFilename());
+        player->play();
+        cui->load->setValue(0);
+    }
+    qDebug() << "nextMusic()" << "playlistLength" << playlist.length();
+
+
 }
 void MusicPlayer::beforeMusic(){
-    cui->load->setValue(0);
+
+    if(playlist.length()==0){
+        tui->songname->setText("没有歌曲");
+    }
+    if(count>=1){
+        count-=1;
+        if(playlist.length()>=count){
+            player->stop();
+            MusicFile mf = playlist.at(count);
+            player->setMedia(mf.getMediaContent());
+             tui->songname->setText(mf.getFilename());
+            player->play();
+            cui->load->setValue(0);
+        }
+    }
+    qDebug() << "beforeMusic()" << "playlistLength" << playlist.length();
 
 }
 void MusicPlayer::changeVolume(){
@@ -121,10 +256,69 @@ void MusicPlayer::changeLoad(){
 }
 
 void MusicPlayer::setLoadMaxValue(){
-    cui->load->setMaximum(player->duration());
+    if(player->isAudioAvailable()){
+        cui->load->setMaximum(player->duration());
+    }
+
 }
 
 void MusicPlayer::setMusicPosition(){
-    player->setPosition(cui->load->value());
+    if(player->isAudioAvailable()){
+       player->setPosition(cui->load->value());
+    }
 }
+
+//void MusicPlayer::mousePressEvent(QMouseEvent *event){
+//}
+
+void MusicPlayer::clearMusicList(){
+    player->stop();
+    //player->deleteLater();
+    playlist.clear();
+    tui->songname->setText("等待操作..");
+    sl.clear();
+    mo->setStringList(sl);
+    //tui->resetImageView();
+    tui->resetImageView();
+    update();
+    update();
+}
+void MusicPlayer::delMusicFile(){
+
+}
+
+void MusicPlayer::handleMusicPlayError(){
+    if(player->error()==QMediaPlayer::ResourceError){
+        QMessageBox::warning(this,"ERROR","ResourceError",QMessageBox::Ok);
+    }
+    if(player->error()==QMediaPlayer::FormatError){
+        QMessageBox::warning(this,"ERROR","FormatError",QMessageBox::Ok);
+    }
+    if(player->error()==QMediaPlayer::AccessDeniedError){
+        QMessageBox::warning(this,"ERROR","AccessDeniedError",QMessageBox::Ok);
+    }
+    if(player->error()==QMediaPlayer::ServiceMissingError){
+        QMessageBox::warning(this,"ERROR","ServiceMissingError",QMessageBox::Ok);
+    }
+    if(player->error()==QMediaPlayer::NetworkError){
+        QMessageBox::warning(this,"ERROR","NetworkError",QMessageBox::Ok);
+    }
+}
+
+void MusicPlayer::playNextOneMusic(qint64 pox){
+     //qDebug() << " playNextOneMusic " << pox;
+     //qDebug() << " playNextOneMusic " << player->duration();
+    if(pox>0 && player->duration()>0){
+        if(pox==player->duration()){
+                if(playlist.length()>count+1){
+                    count++;
+                    MusicFile mf = playlist.at(count);
+                    player->setMedia(mf.getMediaContent());
+                    tui->songname->setText(mf.getFilename());
+                    player->play();
+                }
+    }
+   }
+}
+
 

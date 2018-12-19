@@ -56,6 +56,14 @@ ControlUI::ControlUI(QWidget *parent) : QWidget(parent)
         openOneFolder = new QAction();
         openOneFolder->setText("open Folder");
 
+        //删除一个文件
+        delOneFile = new QAction();
+        delOneFile->setText("Delete");
+
+        //清理播放列表
+        clearPlayList = new QAction();
+        clearPlayList->setText("ClearList");
+
         //状态栏
         status = new QStatusBar;
         status->setStatusTip("Ready..");

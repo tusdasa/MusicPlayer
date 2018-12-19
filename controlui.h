@@ -43,6 +43,12 @@ public:
        //打开一个文件夹
        QAction *openOneFolder;
 
+       //删除一个文件
+       QAction *delOneFile;
+
+       //清理播放列表
+       QAction *clearPlayList;
+
        //状态栏
        QStatusBar *status;
 signals:

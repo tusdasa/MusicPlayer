@@ -7,6 +7,14 @@
 #include <QMenu>
 #include <QMediaPlayer>
 #include <QFileDialog>
+#include <QList>
+#include <musicfile.h>
+#include <QStringListModel>
+#include <QStandardItemModel>
+#include <QStandardItem>
+#include <QMouseEvent>
+#include <QMediaMetaData>
+#include <QMessageBox>
 #include "controlui.h"
 #include "centerui.h"
 class MusicPlayer : public QMainWindow
@@ -34,6 +42,18 @@ public:
     //播放器
     QMediaPlayer *player;
 
+    int count=0;
+
+    //播放列表
+
+    QList<MusicFile> playlist;
+
+    //视图
+    QStringListModel * mo;
+
+    //数据
+    QStringList sl;
+
 public slots:
     //打开文件夹
     void openOneFileFunction();
@@ -57,6 +77,19 @@ public slots:
     void setLoadMaxValue();
     //设置音乐位置
     void setMusicPosition();
+    //删除
+    void delMusicFile();
+    //清理播放列表
+    void clearMusicList();
+    //出错处理
+    void handleMusicPlayError();
+    //当前播放完毕播放下一首
+    void playNextOneMusic(qint64 pox);
+
+protected :
+    //void mousePressEvent(QMouseEvent *event);
+signals:
+    updateImage();
 };
 
 #endif // MUSICPLAYER_H

@@ -27,12 +27,14 @@ SOURCES += \
         main.cpp \
         musicplayer.cpp \
     controlui.cpp \
-    centerui.cpp
+    centerui.cpp \
+    musicfile.cpp
 
 HEADERS += \
         musicplayer.h \
     controlui.h \
-    centerui.h
+    centerui.h \
+    musicfile.h
 
 RESOURCES += \
     res.qrc
