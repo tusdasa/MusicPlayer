@@ -49,6 +49,9 @@ public:
        //清理播放列表
        QAction *clearPlayList;
 
+       //About
+       QAction *about;
+
        //状态栏
        QStatusBar *status;
 signals:

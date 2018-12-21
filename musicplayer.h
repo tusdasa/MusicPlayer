@@ -85,11 +85,12 @@ public slots:
     void handleMusicPlayError();
     //当前播放完毕播放下一首
     void playNextOneMusic(qint64 pox);
+    //关于
+    void about();
 
 protected :
     //void mousePressEvent(QMouseEvent *event);
 signals:
-    updateImage();
 };
 
 #endif // MUSICPLAYER_H

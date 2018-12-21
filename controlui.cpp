@@ -35,10 +35,20 @@ ControlUI::ControlUI(QWidget *parent) : QWidget(parent)
         next->setFixedSize(50,50);
         before->setFixedSize(50,50);
 
+        //提示
+        play->setStatusTip("Play");
+        pause->setStatusTip("Pause");
+        stop->setStatusTip("Stop");
+        next->setStatusTip("Next");
+        before->setStatusTip("Previous");
+
         //定大小
         volume->setMaximum(100);
         volume->setMinimum(0);
         volume->setFixedSize(50,50);
+
+        //提示
+        volume->setStatusTip("Volume");
 
         //初始化音量
         volume->setValue(80);
@@ -46,6 +56,10 @@ ControlUI::ControlUI(QWidget *parent) : QWidget(parent)
         //水平进度条
         load->setOrientation(Qt::Horizontal);
         load->setFixedHeight(20);
+        load->setMinimum(0);
+
+        //提示
+        load->setStatusTip("Load");
 
         //打开一个文件
         openOneFile = new QAction();
@@ -64,8 +78,14 @@ ControlUI::ControlUI(QWidget *parent) : QWidget(parent)
         clearPlayList = new QAction();
         clearPlayList->setText("ClearList");
 
+        //关于
+        about = new QAction();
+        about->setIcon(QIcon(":/img/bix.png"));
+        about->setText("about");
+
         //状态栏
         status = new QStatusBar;
         status->setStatusTip("Ready..");
+        status->showMessage("Ready");
         status->activateWindow();
 }
