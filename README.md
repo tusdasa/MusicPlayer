@@ -2,3 +2,5 @@
 ---
 
 ## 演示
+
+![演示](https://github.com/tusdasa/MusicPlayer/raw/master/ScreenShot/Animation.gif)
